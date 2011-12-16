@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Black Roger Service", "Black Roger Service\Black Roger Service.csproj", "{B1C4550E-15EE-4329-9C84-D29EE3D0A081}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApplication1", "ConsoleApplication1\ConsoleApplication1.csproj", "{7FA92701-D5BF-4156-A415-093F216AD138}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B1C4550E-15EE-4329-9C84-D29EE3D0A081}.Debug|x86.ActiveCfg = Debug|x86
+		{B1C4550E-15EE-4329-9C84-D29EE3D0A081}.Debug|x86.Build.0 = Debug|x86
+		{B1C4550E-15EE-4329-9C84-D29EE3D0A081}.Release|x86.ActiveCfg = Release|x86
+		{B1C4550E-15EE-4329-9C84-D29EE3D0A081}.Release|x86.Build.0 = Release|x86
+		{7FA92701-D5BF-4156-A415-093F216AD138}.Debug|x86.ActiveCfg = Debug|x86
+		{7FA92701-D5BF-4156-A415-093F216AD138}.Debug|x86.Build.0 = Debug|x86
+		{7FA92701-D5BF-4156-A415-093F216AD138}.Release|x86.ActiveCfg = Release|x86
+		{7FA92701-D5BF-4156-A415-093F216AD138}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

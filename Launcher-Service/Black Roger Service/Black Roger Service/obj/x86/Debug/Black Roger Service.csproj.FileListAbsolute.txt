@@ -1,0 +1,9 @@
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\obj\x86\Debug\ResolveAssemblyReference.cache
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\bin\Debug\Black Roger Service.exe
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\bin\Debug\Black Roger Service.pdb
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\obj\x86\Debug\Black Roger Service.exe
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\obj\x86\Debug\Black Roger Service.pdb
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\bin\Debug\Black Roger Service.exe.config
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\obj\x86\Debug\Black_Roger_Service.ProjectInstaller.resources
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\obj\x86\Debug\GenerateResource.read.1.tlog
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\obj\x86\Debug\GenerateResource.write.1.tlog
