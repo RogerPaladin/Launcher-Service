@@ -21,6 +21,8 @@ namespace ConsoleApplication1
         static bool baloonview = true;
         static bool downloaded = false;
         string md;
+        static string Username;
+        static bool LoggedIn = false;
         string mydoc = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
         static RegistryKey savekey = Registry.CurrentUser.CreateSubKey(@"software\Black Roger\");
         static RegistryKey readKey = Registry.CurrentUser.OpenSubKey(@"software\Black Roger\");
@@ -33,6 +35,7 @@ namespace ConsoleApplication1
             private static Thread listenThread;
             static NetworkStream clientStream;
             static StreamWriter swSender;
+            static UTF8Encoding encoder = new UTF8Encoding();
 
             /// <summary>
             /// Main server method
@@ -78,45 +81,48 @@ namespace ConsoleApplication1
             {
                 TcpClient tcpClient = (TcpClient)client;
                 clientStream = tcpClient.GetStream();
-                swSender = new System.IO.StreamWriter(clientStream);
+                //swSender = new System.IO.StreamWriter(clientStream);
 
 
                 byte[] message = new byte[4096];
                 int bytesRead;
 
-                do
+                try
                 {
-                    bytesRead = 0;
-
-                    try
+                    do
                     {
-                        // Blocks until a client sends a message                    
-                        bytesRead = clientStream.Read(message, 0, 4096);
-                    }
-                    catch (Exception)
-                    {
-                        // A socket error has occured
-                        break;
-                    }
+                        bytesRead = 0;
 
-                    if (bytesRead == 0)
-                    {
-                        // The client has disconnected from the server
-                        break;
-                    }
+                        try
+                        {
+                            // Blocks until a client sends a message                    
+                            bytesRead = clientStream.Read(message, 0, 4096);
+                        }
+                        catch (Exception)
+                        {
+                            // A socket error has occured
+                            break;
+                        }
 
-                    // Message has successfully been received
-                    ASCIIEncoding encoder = new ASCIIEncoding();
+                        if (bytesRead == 0)
+                        {
+                            // The client has disconnected from the server
+                            break;
+                        }
 
-                    // Output message
-                    //Console.WriteLine("To: " + tcpClient.Client.LocalEndPoint);
-                    //Console.WriteLine("From: " + tcpClient.Client.RemoteEndPoint);
-                    //Console.WriteLine(encoder.GetString(message, 0, bytesRead));
-                    if (encoder.GetString(message, 0, bytesRead).Contains("GET"))
-                        Parse(encoder.GetString(message, 0, bytesRead));
+                        // Output message
+                        //Console.WriteLine("To: " + tcpClient.Client.LocalEndPoint);
+                        //Console.WriteLine("From: " + tcpClient.Client.RemoteEndPoint);
+                        Console.WriteLine(encoder.GetString(message, 0, bytesRead));
+                        if (encoder.GetString(message, 0, bytesRead).Contains("GET"))
+                            Parse(encoder.GetString(message, 0, bytesRead));
 
 
-                } while (clientStream.DataAvailable);
+                    } while (clientStream.DataAvailable);
+                }
+                catch
+                {
+                }
 
                 // Release connections
                 clientStream.Close();
@@ -126,26 +132,58 @@ namespace ConsoleApplication1
             private static void Parse(string text)
             {
                 string[] split;
+                string[] Messages;
+                string Message = null;
                 char[] splitchar = { '/' };
                 split = text.Split(splitchar);
                 switch (split[1])
                 {
                     case "login":
                         {
-                            if (Login(split[2], split[3]))
+                            if (!LoggedIn)
                             {
-                                if (split[4].Equals("true"))
-                                    savekey.SetValue("AutoLogin", "1");
-                                Response("Shop");
+                                if (Login(split[2], split[3]))
+                                {
+                                    if (split[4].Equals("true"))
+                                        savekey.SetValue("AutoLogin", "1");
+                                    LoggedIn = true;
+                                    Response("chat");
+                                }
+                                else
+                                    Response("Fail");
                             }
                             else
+                            {
                                 Response("Fail");
+                            }
 
                             break;
                         }
                     case "run":
                         {
                             Console.WriteLine(split[1]);
+                            break;
+                        }
+                    case "chat":
+                        {
+                            Messages = Chat();
+                            for (int i = 0; i < 20; i++)
+                            {
+                                Message += Messages[i] + "\r\n";
+                            }
+                            Response(Message);
+                            Console.WriteLine(Message);
+                            break;
+                        }
+                    case "send":
+                        {
+                            //if (LoggedIn)
+                                Send(split[2]);
+                            //else
+                            //{
+                                //Response("Fail");
+                            //}
+                            Console.WriteLine(split[2]);
                             break;
                         }
                 }
@@ -161,9 +199,12 @@ namespace ConsoleApplication1
                     head += ("Content-Type: text/html\n");
                     head += ("Connection: close\n");
                     head += ("\n");
-                    body = text;
-                    swSender.WriteLine(head + body);
-                    swSender.Flush();
+                    body = text.Trim();
+                    byte[] buffer = encoder.GetBytes(head + body);
+                    clientStream.Write(buffer, 0, buffer.Length);
+                    clientStream.Flush();
+                    //swSender.WriteLine(head + body);
+                    //swSender.Flush();
                 }
                 catch
                 {
@@ -184,13 +225,14 @@ namespace ConsoleApplication1
             try
             {
                 WebClient client = new WebClient();
-                Stream data = client.OpenRead("http://rogerpaladin.dyndns.org/player.php?player=" + name.ToLower() + "&pass=" + HashPassword(pass));
-                Console.WriteLine(HashPassword(pass));
+                Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/login/" + name.ToLower() + "/" + HashPassword(pass) + "/");
+                //Stream data = client.OpenRead("http://192.168.1.33:7879/login/" + name.ToLower() + "/" + HashPassword(pass) + "/");
                 StreamReader reader = new StreamReader(data);
                 string s = reader.ReadToEnd();
-                if (s.Equals("1"))
+                if (s.Contains("Success"))
                 {
                     Console.WriteLine("Success!");
+                    Username = name;
                     return true;
                 }
                 else
@@ -204,6 +246,51 @@ namespace ConsoleApplication1
                 Console.WriteLine("Can't connect to DB");
                 return false;
             }
+        }
+
+        public static string[] Chat()
+        {
+            string[] Messages = new string[21];
+            int m = 0;
+            char[] splitchar1 = { '\'' };
+            WebClient client = new WebClient();
+            Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/chat/");
+            StreamReader reader = new StreamReader(data);
+            string s = reader.ReadToEnd();
+            string[] split1 = s.Split(splitchar1);
+            for (int i = 1; i < 41; i++)
+            {
+                Messages[m] = split1[i];
+                i = i + 1;
+                m++;
+            }
+            return Messages;
+        }
+
+        public static bool Send(string text)
+        {
+          try
+            {
+            WebClient client = new WebClient();
+            Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/send/" + Username + "/All/" + text);
+            StreamReader reader = new StreamReader(data);
+            string s = reader.ReadToEnd();
+            if (s.Contains("Success"))
+            {
+                Console.WriteLine("Success!");
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Fail");
+                return false;
+            }
+            }
+          catch
+          {
+              Console.WriteLine("Can't connect to DB");
+              return false;
+          }
         }
 
         public static string HashPassword(string password)
