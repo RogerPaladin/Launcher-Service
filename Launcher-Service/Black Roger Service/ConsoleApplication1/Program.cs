@@ -8,8 +8,9 @@ using System.Security.Cryptography;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Win32;
+using System.Diagnostics;
 
-namespace ConsoleApplication1
+namespace Service
 {
     class Program
     {
@@ -17,16 +18,21 @@ namespace ConsoleApplication1
         static string HashAlgo = "sha512";
         static bool versioncheck = false;
         static bool newplayer = false;
-        static bool noudp = false;
-        static bool baloonview = true;
         static bool downloaded = false;
         static bool LoggedIn = false;
-        string md;
+        static string md = string.Empty;
         static string Username;
-        string mydoc = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+        static string mydoc = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
         static RegistryKey savekey = Registry.CurrentUser.CreateSubKey(@"software\Black Roger\");
         static RegistryKey readKey = Registry.CurrentUser.OpenSubKey(@"software\Black Roger\");
+        //static string path = readKey.GetValue("Path").ToString();
+        static string path = null;
         static System.Diagnostics.Process MyProc = new System.Diagnostics.Process();
+        static CustomTimer dispatcherTimer = new CustomTimer(1000, 1000);
+        static string[] recentWorld = new string[10];
+        static string[] recentIP = new string[10];
+        static int[] recentPort = new int[10];
+        static string ip;
 
         class Server
         {
@@ -145,7 +151,11 @@ namespace ConsoleApplication1
                                 if (Login(split[2], split[3]))
                                 {
                                     if (split[4].Equals("true"))
+                                    {
+                                        savekey.SetValue("Login", split[2]);
+                                        savekey.SetValue("Pass", split[3]);
                                         savekey.SetValue("AutoLogin", "1");
+                                    }
                                     LoggedIn = true;
                                     Response("chat");
                                 }
@@ -161,7 +171,7 @@ namespace ConsoleApplication1
                         }
                     case "run":
                         {
-                            Console.WriteLine(split[1]);
+                            FileCheck();
                             break;
                         }
                     case "chat":
@@ -215,8 +225,298 @@ namespace ConsoleApplication1
             Server server = new Server();
             Thread ServerStart = new Thread(new ThreadStart(server.StartServer));
             ServerStart.Start();
+            dispatcherTimer.Tick += new TickDelegate(timer_Tick);
         }
 
+        public static void RunGame()
+        {
+            IPAddress[] addresslist = Dns.GetHostAddresses("rogerpaladin.dyndns.org");
+            foreach (IPAddress theaddress in addresslist)
+            {
+                ip = theaddress.ToString();
+            }
+            
+            if (File.Exists(path + "Terraria.exe"))
+            {
+                if (path.Contains("steamapps\\common\\terraria\\"))
+                {
+                    MyProc.StartInfo.FileName = "steam://rungameid/105600";
+                    MyProc.Start();
+                    dispatcherTimer.Start();
+                    OpenRecent();
+                    NewRecent();
+                }
+                else
+                {
+                    MyProc.StartInfo.FileName = path + "Terraria.exe";
+                    MyProc.Start();
+                    dispatcherTimer.Start();
+                    OpenRecent();
+                    NewRecent();
+                }
+            }
+            else
+            {
+                Console.WriteLine("Terraria not found!");
+            }
+        }
+
+        private static void HidePlayers()
+        {
+            string directory = mydoc + "\\My Games\\Terraria\\Players\\";
+            DirectoryInfo dir = new DirectoryInfo(directory);
+            FileInfo[] plrfiles = dir.GetFiles("*.plr");
+            if (!Directory.Exists(mydoc + "\\My Games\\Terraria\\Players\\tmp\\"))
+                dir.CreateSubdirectory("tmp");
+            foreach (FileInfo f in plrfiles)
+            {
+                File.Move(directory + f.Name, directory + "tmp\\" + f.Name);
+            }
+        }
+
+        private static void ShowPlayers()
+        {
+            string directory = mydoc + "\\My Games\\Terraria\\Players\\tmp\\";
+            if (Directory.Exists(directory))
+            {
+                DirectoryInfo dir = new DirectoryInfo(directory);
+                FileInfo[] plrfiles = dir.GetFiles("*.plr");
+                foreach (FileInfo f in plrfiles)
+                {
+                    File.Move(directory + f.Name, directory + "..\\" + f.Name);
+                }
+                Directory.Delete(directory);
+            }
+            else
+            {
+                Console.WriteLine("ShowPlayers directory not exist");
+            }
+        }
+
+        public static void VersionCheck()
+        {
+            try
+            {
+                string patches = new WebClient().DownloadString("http://rogerpaladin.dyndns.org/launcher/Launcher.md5");
+                using (var fs = new FileStream(path + "Launcher.exe", FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    md = MD(fs);
+                }
+                if (!patches.ToLower().Contains(md.ToLower()))
+                {
+                        Console.WriteLine("Updating!");
+                        new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/launcher/Launcher.exe", path + "Launcher1.exe");
+                        FileInfo file = new FileInfo(path + "Launcher1.exe");
+                        file.Attributes = FileAttributes.Hidden;
+                        MyProc.StartInfo.FileName = path + "Launcher1.exe";
+                        MyProc.Start();
+                        Process.GetCurrentProcess().Kill();
+                }
+                else
+                    if (versioncheck == true)
+                    {
+                        Console.WriteLine("No updates found!");
+                    }
+            }
+            catch
+            {
+                Console.WriteLine("Косячина :p!");
+            }
+        }
+
+        public static void FileCheck()
+        {
+            if (File.Exists(path + "Terraria.exe"))
+            {
+                try
+                {
+                    if (path.Contains("steamapps\\common\\terraria\\"))
+                    {
+                        string patches = new WebClient().DownloadString("http://rogerpaladin.dyndns.org/launcher/steam/Terraria.md5");
+                        using (var fs = new FileStream(path + "Terraria.exe", FileMode.Open, FileAccess.Read, FileShare.Read))
+                        {
+                            md = MD(fs);
+                        }
+                        if (!patches.ToLower().Contains(md.ToLower()))
+                        {
+                                new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/launcher/steam/Terraria.exe", path + "Terraria.exe");
+                                Console.WriteLine("Downloading!");
+                                RunGame();
+                        }
+                        else
+                        {
+                            RunGame();
+                        }
+                    }
+                    else
+                    {
+                        string patches = new WebClient().DownloadString("http://rogerpaladin.dyndns.org/launcher/crack/Terraria.md5");
+
+                        using (var fs = new FileStream(path + "Terraria.exe", FileMode.Open, FileAccess.Read, FileShare.Read))
+                        {
+                            md = MD(fs);
+                        }
+                        if (!patches.ToLower().Contains(md.ToLower()))
+                        {
+                                new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/launcher/crack/Terraria.exe", path + "Terraria.exe");
+                                Console.WriteLine("Downloading!");
+                                RunGame();
+                        }
+                        else
+                        {
+                            RunGame();
+                        }
+                    }
+                }
+                catch
+                {
+                    Console.WriteLine("Косячина :p!");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Terraria.exe not found!");
+            }
+        }
+
+        public static void DownloadProfile()
+        {
+            try
+            {
+                HidePlayers();
+                new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/profiles/" + Username.ToLower() + ".plr", mydoc + "\\My Games\\Terraria\\Players\\" + Username.ToLower() + ".plr");
+                Console.WriteLine("Profile " + Username + " loaded successfully!");
+            }
+            catch
+            {
+                Console.WriteLine("Profile " + Username + " is not found on server!");
+            }
+        }
+
+        public static void OpenRecent()
+        {
+            if (File.Exists(mydoc + "\\My Games\\Terraria\\servers.dat"))
+                using (FileStream fileStream = new FileStream(mydoc + "\\My Games\\Terraria\\servers.dat", FileMode.Open))
+                {
+                    using (BinaryReader binaryReader = new BinaryReader(fileStream))
+                    {
+                        binaryReader.ReadInt32();
+                        for (int i = 0; i < 10; i++)
+                        {
+                            recentWorld[i] = binaryReader.ReadString();
+                            recentIP[i] = binaryReader.ReadString();
+                            recentPort[i] = binaryReader.ReadInt32();
+                        }
+                    }
+                }
+        }
+
+        public static void SaveRecent()
+        {
+            using (FileStream fileStream = new FileStream(mydoc + "\\My Games\\Terraria\\servers.dat", FileMode.Create))
+            {
+                using (BinaryWriter binaryWriter = new BinaryWriter(fileStream))
+                {
+                    binaryWriter.Write(37);
+                    for (int i = 0; i < 10; i++)
+                    {
+                        binaryWriter.Write(recentWorld[i]);
+                        binaryWriter.Write(recentIP[i]);
+                        binaryWriter.Write(recentPort[i]);
+                    }
+                }
+            }
+        }
+
+        public static void NewRecent()
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                if (recentIP[i] == ip && recentPort[i] == 7777)
+                {
+                    for (int j = i; j < 9; j++)
+                    {
+                        recentIP[j] = recentIP[j + 1];
+                        recentPort[j] = recentPort[j + 1];
+                        recentWorld[j] = recentWorld[j + 1];
+                    }
+                }
+            }
+            for (int k = 9; k > 0; k--)
+            {
+                recentIP[k] = recentIP[k - 1];
+                recentPort[k] = recentPort[k - 1];
+                recentWorld[k] = recentWorld[k - 1];
+            }
+            recentIP[0] = ip;
+            recentPort[0] = 7777;
+            recentWorld[0] = "Black Roger";
+            SaveRecent();
+        }
+
+        public static void timer_Tick()
+        {
+            if (Process.GetProcesses().Any(clsProcess => clsProcess.ProcessName.Equals("Terraria")))
+            {
+                if (!downloaded && !newplayer)
+                {
+                    DownloadProfile();
+                    downloaded = true;
+                }
+            }
+            else
+            {
+                if (downloaded && !newplayer)
+                {
+                    dispatcherTimer.Stop();
+
+                    if (File.Exists(mydoc + "\\My Games\\Terraria\\Players\\" + Username + ".plr"))
+                        File.Delete(mydoc + "\\My Games\\Terraria\\Players\\" + Username + ".plr");
+
+                    if (File.Exists(mydoc + "\\My Games\\Terraria\\Players\\" + Username + ".plr.bak"))
+                        File.Delete(mydoc + "\\My Games\\Terraria\\Players\\" + Username + ".plr.bak");
+
+                    ShowPlayers();
+                    downloaded = false;
+                }
+            }
+        }
+
+        public static string HashPassword(string password)
+        {
+            if (string.IsNullOrEmpty(password) || password == "non-existant password")
+                return "non-existant password";
+
+            Func<HashAlgorithm> func;
+            if (!HashTypes.TryGetValue(HashAlgo.ToLower(), out func))
+                throw new NotSupportedException(String.Format("Hashing algorithm {0} is not supported", (HashAlgo.ToLower())));
+
+            using (var hash = func())
+            {
+                var bytes = hash.ComputeHash(Encoding.ASCII.GetBytes(password));
+                return bytes.Aggregate("", (s, b) => s + b.ToString("X2"));
+            }
+        }
+
+        public static string MD(Stream stream)
+        {
+            using (var sha = MD5CryptoServiceProvider.Create())
+            {
+                var bytes = sha.ComputeHash(stream);
+                return bytes.Aggregate("", (s, b) => s + b.ToString("X2"));
+            }
+        }
+
+        public static readonly Dictionary<string, Func<HashAlgorithm>> HashTypes = new Dictionary<string, Func<HashAlgorithm>>
+        {
+            {"sha512", () => new SHA512Managed()},
+            {"sha256", () => new SHA256Managed()},
+            {"md5", () => new MD5Cng()},
+            {"sha512-xp", () => SHA512.Create()},
+            {"sha256-xp", () => SHA256.Create()},
+            {"md5-xp", () => MD5.Create()},
+        };
+        
         public static bool Login(string name, string pass)
         {
             try
@@ -268,64 +568,29 @@ namespace ConsoleApplication1
 
         public static bool Send(string text)
         {
-          try
+            try
             {
-              WebClient client = new WebClient();
-              //Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/send/" + Username + "/All/" + text + "/");
-              Stream data = client.OpenRead("http://192.168.1.33:7879/send/" + Username + "/All/" + text + "/");
-            StreamReader reader = new StreamReader(data);
-            string s = reader.ReadToEnd();
-              if (s.Contains("Success"))
-            {
-                Console.WriteLine("Success!");
-                return true;
+                WebClient client = new WebClient();
+                //Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/send/" + Username + "/All/" + text + "/");
+                Stream data = client.OpenRead("http://192.168.1.33:7879/send/" + Username + "/All/" + text + "/");
+                StreamReader reader = new StreamReader(data);
+                string s = reader.ReadToEnd();
+                if (s.Contains("Success"))
+                {
+                    Console.WriteLine("Success!");
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine("Fail");
+                    return false;
+                }
             }
-            else
+            catch
             {
-                Console.WriteLine("Fail");
+                Console.WriteLine("Can't connect to DB");
                 return false;
             }
-            }
-          catch
-          {
-              Console.WriteLine("Can't connect to DB");
-              return false;
-          }
         }
-
-        public static string HashPassword(string password)
-        {
-            if (string.IsNullOrEmpty(password) || password == "non-existant password")
-                return "non-existant password";
-
-            Func<HashAlgorithm> func;
-            if (!HashTypes.TryGetValue(HashAlgo.ToLower(), out func))
-                throw new NotSupportedException(String.Format("Hashing algorithm {0} is not supported", (HashAlgo.ToLower())));
-
-            using (var hash = func())
-            {
-                var bytes = hash.ComputeHash(Encoding.ASCII.GetBytes(password));
-                return bytes.Aggregate("", (s, b) => s + b.ToString("X2"));
-            }
-        }
-
-        public static string MD(Stream stream)
-        {
-            using (var sha = MD5CryptoServiceProvider.Create())
-            {
-                var bytes = sha.ComputeHash(stream);
-                return bytes.Aggregate("", (s, b) => s + b.ToString("X2"));
-            }
-        }
-
-        public static readonly Dictionary<string, Func<HashAlgorithm>> HashTypes = new Dictionary<string, Func<HashAlgorithm>>
-        {
-            {"sha512", () => new SHA512Managed()},
-            {"sha256", () => new SHA256Managed()},
-            {"md5", () => new MD5Cng()},
-            {"sha512-xp", () => SHA512.Create()},
-            {"sha256-xp", () => SHA256.Create()},
-            {"md5-xp", () => MD5.Create()},
-        };
     }
 }
