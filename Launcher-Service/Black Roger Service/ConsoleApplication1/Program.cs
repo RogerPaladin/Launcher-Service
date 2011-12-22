@@ -20,9 +20,9 @@ namespace ConsoleApplication1
         static bool noudp = false;
         static bool baloonview = true;
         static bool downloaded = false;
+        static bool LoggedIn = false;
         string md;
         static string Username;
-        static bool LoggedIn = false;
         string mydoc = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
         static RegistryKey savekey = Registry.CurrentUser.CreateSubKey(@"software\Black Roger\");
         static RegistryKey readKey = Registry.CurrentUser.OpenSubKey(@"software\Black Roger\");
@@ -34,8 +34,8 @@ namespace ConsoleApplication1
             private static TcpListener tcpListener;
             private static Thread listenThread;
             static NetworkStream clientStream;
-            static StreamWriter swSender;
-            static UTF8Encoding encoder = new UTF8Encoding();
+            static UTF8Encoding utf8 = new UTF8Encoding();
+            static Encoding win1251 = Encoding.GetEncoding("Windows-1251");
 
             /// <summary>
             /// Main server method
@@ -113,9 +113,9 @@ namespace ConsoleApplication1
                         // Output message
                         //Console.WriteLine("To: " + tcpClient.Client.LocalEndPoint);
                         //Console.WriteLine("From: " + tcpClient.Client.RemoteEndPoint);
-                        Console.WriteLine(encoder.GetString(message, 0, bytesRead));
-                        if (encoder.GetString(message, 0, bytesRead).Contains("GET"))
-                            Parse(encoder.GetString(message, 0, bytesRead));
+                        Console.WriteLine(utf8.GetString(message, 0, bytesRead));
+                        if (utf8.GetString(message, 0, bytesRead).Contains("GET"))
+                            Parse(utf8.GetString(message, 0, bytesRead));
 
 
                     } while (clientStream.DataAvailable);
@@ -169,21 +169,20 @@ namespace ConsoleApplication1
                             Messages = Chat();
                             for (int i = 0; i < 20; i++)
                             {
-                                Message += Messages[i] + "\r\n";
+                                Message += (Messages[i] + "\r\n");
                             }
                             Response(Message);
-                            Console.WriteLine(Message);
                             break;
                         }
                     case "send":
                         {
-                            //if (LoggedIn)
-                                Send(split[2]);
-                            //else
-                            //{
-                                //Response("Fail");
-                            //}
-                            Console.WriteLine(split[2]);
+                            if (LoggedIn)
+                                Send((split[2]));
+                            else
+                            {
+                                Response("Fail");
+                                Console.WriteLine("Fail send");
+                            }
                             break;
                         }
                 }
@@ -200,11 +199,9 @@ namespace ConsoleApplication1
                     head += ("Connection: close\n");
                     head += ("\n");
                     body = text.Trim();
-                    byte[] buffer = encoder.GetBytes(head + body);
+                    byte[] buffer = win1251.GetBytes(head + body);
                     clientStream.Write(buffer, 0, buffer.Length);
                     clientStream.Flush();
-                    //swSender.WriteLine(head + body);
-                    //swSender.Flush();
                 }
                 catch
                 {
@@ -226,7 +223,6 @@ namespace ConsoleApplication1
             {
                 WebClient client = new WebClient();
                 Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/login/" + name.ToLower() + "/" + HashPassword(pass) + "/");
-                //Stream data = client.OpenRead("http://192.168.1.33:7879/login/" + name.ToLower() + "/" + HashPassword(pass) + "/");
                 StreamReader reader = new StreamReader(data);
                 string s = reader.ReadToEnd();
                 if (s.Contains("Success"))
@@ -250,13 +246,16 @@ namespace ConsoleApplication1
 
         public static string[] Chat()
         {
+            Encoding win1251 = Encoding.GetEncoding("Windows-1251");
             string[] Messages = new string[21];
             int m = 0;
             char[] splitchar1 = { '\'' };
+            byte[] bytes;
+            char[] chars;
             WebClient client = new WebClient();
-            Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/chat/");
-            StreamReader reader = new StreamReader(data);
-            string s = reader.ReadToEnd();
+            bytes = client.DownloadData("http://rogerpaladin.dyndns.org:7878/chat/");
+            chars = win1251.GetChars(bytes);
+            string s = new string(chars);
             string[] split1 = s.Split(splitchar1);
             for (int i = 1; i < 41; i++)
             {
@@ -271,11 +270,12 @@ namespace ConsoleApplication1
         {
           try
             {
-            WebClient client = new WebClient();
-            Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/send/" + Username + "/All/" + text);
+              WebClient client = new WebClient();
+              //Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/send/" + Username + "/All/" + text + "/");
+              Stream data = client.OpenRead("http://192.168.1.33:7879/send/" + Username + "/All/" + text + "/");
             StreamReader reader = new StreamReader(data);
             string s = reader.ReadToEnd();
-            if (s.Contains("Success"))
+              if (s.Contains("Success"))
             {
                 Console.WriteLine("Success!");
                 return true;
