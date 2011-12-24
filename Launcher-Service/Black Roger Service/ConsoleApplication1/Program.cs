@@ -25,8 +25,7 @@ namespace Service
         static string mydoc = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
         static RegistryKey savekey = Registry.CurrentUser.CreateSubKey(@"software\Black Roger\");
         static RegistryKey readKey = Registry.CurrentUser.OpenSubKey(@"software\Black Roger\");
-        //static string path = readKey.GetValue("Path").ToString();
-        static string path = null;
+        static string path = readKey.GetValue("Path").ToString();
         static System.Diagnostics.Process MyProc = new System.Diagnostics.Process();
         static CustomTimer dispatcherTimer = new CustomTimer(1000, 1000);
         static string[] recentWorld = new string[10];

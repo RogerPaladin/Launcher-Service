@@ -1,0 +1,7 @@
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\ConsoleApplication1\obj\x86\Debug\ResolveAssemblyReference.cache
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\ConsoleApplication1\bin\Debug\Service.exe.config
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\ConsoleApplication1\bin\Debug\Service.exe
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\ConsoleApplication1\bin\Debug\Service.pdb
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\ConsoleApplication1\obj\x86\Debug\Service.exe
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\ConsoleApplication1\obj\x86\Debug\Service.pdb
+Z:\home\192.168.1.33\www\game\Service.exe.config

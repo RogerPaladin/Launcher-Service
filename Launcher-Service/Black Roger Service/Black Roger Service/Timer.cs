@@ -4,7 +4,7 @@ using System.Threading;
 
 
 
-namespace Black_Roger_Service
+namespace Service
 {
 
     public delegate void TickDelegate();
