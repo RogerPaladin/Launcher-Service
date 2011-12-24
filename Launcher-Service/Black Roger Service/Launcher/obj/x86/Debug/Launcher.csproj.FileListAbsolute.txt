@@ -1,0 +1,5 @@
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Launcher\bin\Debug\Launcher.exe
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Launcher\bin\Debug\Launcher.pdb
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Launcher\obj\x86\Debug\ResolveAssemblyReference.cache
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Launcher\obj\x86\Debug\Launcher.exe
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Launcher\obj\x86\Debug\Launcher.pdb

@@ -571,8 +571,8 @@ namespace Service
             try
             {
                 WebClient client = new WebClient();
-                //Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/send/" + Username + "/All/" + text + "/");
-                Stream data = client.OpenRead("http://192.168.1.33:7879/send/" + Username + "/All/" + text + "/");
+                Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/send/" + Username + "/All/" + text + "/");
+                //Stream data = client.OpenRead("http://192.168.1.33:7879/send/" + Username + "/All/" + text + "/");
                 StreamReader reader = new StreamReader(data);
                 string s = reader.ReadToEnd();
                 if (s.Contains("Success"))
