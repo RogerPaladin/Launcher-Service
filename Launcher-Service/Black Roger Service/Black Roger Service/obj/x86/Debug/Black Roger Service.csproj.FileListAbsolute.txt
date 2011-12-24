@@ -1,6 +1,6 @@
-D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\bin\Debug\Black Roger Service.exe.config
-D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\bin\Debug\Black Roger Service.exe
-D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\bin\Debug\Black Roger Service.pdb
 D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\obj\x86\Debug\ResolveAssemblyReference.cache
-D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\obj\x86\Debug\Black Roger Service.exe
-D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\obj\x86\Debug\Black Roger Service.pdb
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\bin\Debug\BlackRoger.exe.config
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\bin\Debug\BlackRoger.exe
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\bin\Debug\BlackRoger.pdb
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\obj\x86\Debug\BlackRoger.exe
+D:\Projects\Coding\Launcher\Launcher-Service\Black Roger Service\Black Roger Service\obj\x86\Debug\BlackRoger.pdb

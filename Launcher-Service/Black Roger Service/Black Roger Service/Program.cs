@@ -23,17 +23,21 @@ namespace Service
         static bool LoggedIn = false;
         static string md = string.Empty;
         static string Username;
-        static string mydoc = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-        static RegistryKey savekey = Registry.CurrentUser.CreateSubKey(@"software\Black Roger\");
-        static RegistryKey readKey = Registry.CurrentUser.OpenSubKey(@"software\Black Roger\");
-        //static string path = readKey.GetValue("Path").ToString();
-        static string path = null;
+        static RegistryKey savekey = Registry.LocalMachine.CreateSubKey(@"software\Black Roger\");
+        static RegistryKey readKey = Registry.LocalMachine.OpenSubKey(@"software\Black Roger\");
+        static string path = readKey.GetValue("Path").ToString();
+        static string mydoc = readKey.GetValue("Doc").ToString();
         static System.Diagnostics.Process MyProc = new System.Diagnostics.Process();
         static CustomTimer dispatcherTimer = new CustomTimer(1000, 1000);
+        static CustomTimer UpdateTimer = new CustomTimer(1800000, 1000);
         static string[] recentWorld = new string[10];
         static string[] recentIP = new string[10];
         static int[] recentPort = new int[10];
         static string ip;
+        static EventLog elog = new EventLog();
+        static StreamWriter file;
+        static Server server = new Server();
+        static Thread ServerStart = new Thread(new ThreadStart(server.StartServer));
 
         class Server
         {
@@ -52,6 +56,12 @@ namespace Service
                 tcpListener = new TcpListener(IPAddress.Any, 9005);
                 listenThread = new Thread(new ThreadStart(ListenForClients));
                 listenThread.Start();
+            }
+            
+            public void StopServer()
+            {
+                listenThread.Abort();
+                tcpListener.Stop();
             }
 
             /// <summary>
@@ -220,7 +230,7 @@ namespace Service
                 }
             }
         }
-
+        
         static void Main(string[] args)
         {
             ServiceBase.Run(new Program());
@@ -234,18 +244,19 @@ namespace Service
         protected override void OnStart(string[] args)
         {
             base.OnStart(args);
-
-            Server server = new Server();
-            Thread ServerStart = new Thread(new ThreadStart(server.StartServer));
+            Log("Service Started");
             ServerStart.Start();
             dispatcherTimer.Tick += new TickDelegate(timer_Tick);
+            UpdateTimer.Tick += new TickDelegate(VersionCheck);
+            VersionCheck();
         }
 
         protected override void OnStop()
         {
+            Log("Service Stopped");
+            ServerStart.Abort();
+            server.StopServer();
             base.OnStop();
-
-            //TODO: clean up any variables and stop any threads
         }
 
         public static void RunGame()
@@ -256,7 +267,7 @@ namespace Service
                 ip = theaddress.ToString();
             }
             
-            if (File.Exists(path + "Terraria.exe"))
+            if (File.Exists(path + "\\Terraria.exe"))
             {
                 if (path.Contains("steamapps\\common\\terraria\\"))
                 {
@@ -277,7 +288,7 @@ namespace Service
             }
             else
             {
-                Console.WriteLine("Terraria not found!");
+                Log("Terraria not found!");
             }
         }
 
@@ -309,58 +320,59 @@ namespace Service
             }
             else
             {
-                Console.WriteLine("ShowPlayers directory not exist");
+                Log("ShowPlayers directory not exist");
             }
         }
 
         public static void VersionCheck()
         {
+            //System.Diagnostics.Debugger.Launch();
             try
             {
-                string patches = new WebClient().DownloadString("http://rogerpaladin.dyndns.org/launcher/Launcher.md5");
-                using (var fs = new FileStream(path + "Launcher.exe", FileMode.Open, FileAccess.Read, FileShare.Read))
+                string patches = new WebClient().DownloadString("http://rogerpaladin.dyndns.org/service/BlackRoger.md5");
+                using (var fs = new FileStream(mydoc + "\\BlackRoger.sys", FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     md = MD(fs);
                 }
                 if (!patches.ToLower().Contains(md.ToLower()))
                 {
-                        Console.WriteLine("Updating!");
-                        new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/launcher/Launcher.exe", path + "Launcher1.exe");
-                        FileInfo file = new FileInfo(path + "Launcher1.exe");
+                        Log("Updating!");
+                        if (File.Exists(mydoc + "\\Launcher.exe"))
+                            File.Delete(mydoc + "\\Launcher.exe");    
+                        new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/service/Launcher.exe", mydoc + "\\Launcher.exe");
+                        FileInfo file = new FileInfo(mydoc + "\\Launcher.exe");
                         file.Attributes = FileAttributes.Hidden;
-                        MyProc.StartInfo.FileName = path + "Launcher1.exe";
-                        MyProc.Start();
-                        Process.GetCurrentProcess().Kill();
+                        Process.Start(mydoc + "\\Launcher.exe", "/update");
                 }
                 else
                     if (versioncheck == true)
                     {
-                        Console.WriteLine("No updates found!");
+                        Log("No updates found!");
                     }
             }
             catch
             {
-                Console.WriteLine("Косячина :p!");
+                Log("Update Косячина :p!");
             }
         }
 
         public static void FileCheck()
         {
-            if (File.Exists(path + "Terraria.exe"))
+            if (File.Exists(path + "\\Terraria.exe"))
             {
                 try
                 {
                     if (path.Contains("steamapps\\common\\terraria\\"))
                     {
                         string patches = new WebClient().DownloadString("http://rogerpaladin.dyndns.org/launcher/steam/Terraria.md5");
-                        using (var fs = new FileStream(path + "Terraria.exe", FileMode.Open, FileAccess.Read, FileShare.Read))
+                        using (var fs = new FileStream(path + "\\Terraria.exe", FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
                             md = MD(fs);
                         }
                         if (!patches.ToLower().Contains(md.ToLower()))
                         {
-                                new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/launcher/steam/Terraria.exe", path + "Terraria.exe");
-                                Console.WriteLine("Downloading!");
+                                new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/launcher/steam/Terraria.exe", path + "\\Terraria.exe");
+                                Log("Downloading!");
                                 RunGame();
                         }
                         else
@@ -372,14 +384,14 @@ namespace Service
                     {
                         string patches = new WebClient().DownloadString("http://rogerpaladin.dyndns.org/launcher/crack/Terraria.md5");
 
-                        using (var fs = new FileStream(path + "Terraria.exe", FileMode.Open, FileAccess.Read, FileShare.Read))
+                        using (var fs = new FileStream(path + "\\Terraria.exe", FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
                             md = MD(fs);
                         }
                         if (!patches.ToLower().Contains(md.ToLower()))
                         {
-                                new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/launcher/crack/Terraria.exe", path + "Terraria.exe");
-                                Console.WriteLine("Downloading!");
+                                new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/launcher/crack/Terraria.exe", path + "\\Terraria.exe");
+                                Log("Downloading!");
                                 RunGame();
                         }
                         else
@@ -390,12 +402,12 @@ namespace Service
                 }
                 catch
                 {
-                    Console.WriteLine("Косячина :p!");
+                    Log("Косячина :p!");
                 }
             }
             else
             {
-                Console.WriteLine("Terraria.exe not found!");
+                Log("Terraria.exe not found!");
             }
         }
 
@@ -405,11 +417,11 @@ namespace Service
             {
                 HidePlayers();
                 new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/profiles/" + Username.ToLower() + ".plr", mydoc + "\\My Games\\Terraria\\Players\\" + Username.ToLower() + ".plr");
-                Console.WriteLine("Profile " + Username + " loaded successfully!");
+                Log("Profile " + Username + " loaded successfully!");
             }
             catch
             {
-                Console.WriteLine("Profile " + Username + " is not found on server!");
+                Log("Profile " + Username + " is not found on server!");
             }
         }
 
@@ -502,6 +514,15 @@ namespace Service
             }
         }
 
+        public static void Log(string text)
+        {
+            file = new StreamWriter(new FileStream(mydoc + "\\BlackRoger.log", System.IO.FileMode.Append));
+            file.WriteLine(DateTime.Now + ": " + text);
+            elog.WriteEntry(text);
+            file.Flush();
+            file.Close();
+        }
+
         public static string HashPassword(string password)
         {
             if (string.IsNullOrEmpty(password) || password == "non-existant password")
@@ -547,19 +568,17 @@ namespace Service
                 string s = reader.ReadToEnd();
                 if (s.Contains("Success"))
                 {
-                    Console.WriteLine("Success!");
                     Username = name;
                     return true;
                 }
                 else
                 {
-                    Console.WriteLine("Incorrect password or user " + name + " not found!");
+                    Log("Incorrect password or user " + name + " not found!");
                     return false;
                 }
             }
             catch
             {
-                Console.WriteLine("Can't connect to DB");
                 return false;
             }
         }
@@ -597,18 +616,15 @@ namespace Service
                 string s = reader.ReadToEnd();
                 if (s.Contains("Success"))
                 {
-                    Console.WriteLine("Success!");
                     return true;
                 }
                 else
                 {
-                    Console.WriteLine("Fail");
                     return false;
                 }
             }
             catch
             {
-                Console.WriteLine("Can't connect to DB");
                 return false;
             }
         }
