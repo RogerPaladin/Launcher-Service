@@ -27,6 +27,7 @@ namespace Launcher
             if (args.Length == 0)
             {
                 savekey.SetValue("Doc", mydoc);
+                mydoc = readKey.GetValue("Doc").ToString();
                 if (CheckFolder())
                 {
                     Log("Installing service....");
@@ -86,7 +87,6 @@ namespace Launcher
                 }
                 if (args[0] == "/update")
                 {
-                    string mydoc = readKey.GetValue("Doc").ToString();
                     if (IsServiceInstalled(controller.ServiceName))
                     {
                         try
@@ -119,7 +119,7 @@ namespace Launcher
         {
             if (File.Exists("Terraria.exe"))
             {
-                savekey.SetValue("Path", System.AppDomain.CurrentDomain.BaseDirectory);
+                savekey.SetValue("Path", mydoc);
                 return true;
             }
             return false;

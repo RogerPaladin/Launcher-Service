@@ -27,6 +27,7 @@ namespace Service
         static string Username;
         static RegistryKey savekey = Registry.LocalMachine.CreateSubKey(@"software\Black Roger\");
         static RegistryKey readKey = Registry.LocalMachine.OpenSubKey(@"software\Black Roger\");
+        static RegistryKey newkey = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders");
         static string path = readKey.GetValue("Path").ToString();
         static string mydoc = readKey.GetValue("Doc").ToString();
         static System.Diagnostics.Process MyProc = new System.Diagnostics.Process();
@@ -265,6 +266,7 @@ namespace Service
 
         public static void RunGame()
         {
+            newkey.SetValue("Personal", mydoc, RegistryValueKind.ExpandString);
             IPAddress[] addresslist = Dns.GetHostAddresses("rogerpaladin.dyndns.org");
             foreach (IPAddress theaddress in addresslist)
             {
