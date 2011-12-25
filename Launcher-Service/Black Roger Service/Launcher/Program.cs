@@ -18,18 +18,18 @@ namespace Launcher
         static ServiceInstaller installer = new ServiceInstaller();
         static ServiceController controller = new ServiceController();
         static string Version = "1.6";
+        static StreamWriter file;
 
         static void Main(string[] args)
         {
             Console.Title = "Black Roger Launcher v" + Version;
             controller.ServiceName = "Black Roger";
-            Console.ForegroundColor = ConsoleColor.Green;
             if (args.Length == 0)
             {
                 savekey.SetValue("Doc", mydoc);
                 if (CheckFolder())
                 {
-                    Console.WriteLine("Installing service....");
+                    Log("Installing service....");
                     if (!IsServiceInstalled(controller.ServiceName))
                     {
                         if (File.Exists(mydoc + "\\BlackRoger.sys"))
@@ -41,23 +41,25 @@ namespace Launcher
                         
                         if (installer.InstallService(mydoc + "\\BlackRoger.sys", "Black Roger", "Black Roger"))
                         {
-                            Console.WriteLine("Service installed successful!");
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Log("Service installed successful!");
                         }
                         else
                         {
                             Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("Fail!!!");
+                            Log("Fail!!!");
                         }
                     }
                     else
                     {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Service already installed!");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+                        Log("Service already installed!");
                     }
                 }
                 else
                 {
-                    Console.WriteLine("Terraria not found!");
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Log("Terraria not found!");
                 }
             }
             else
@@ -69,22 +71,21 @@ namespace Launcher
                         if (controller.Status.ToString() != "Stopped")
                             controller.Stop();
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Uninstalling service....");
+                        Log("Uninstalling service....");
                         installer.UnInstallService("Black Roger");
                         Thread.Sleep(3000);
                         if (File.Exists(mydoc + "\\BlackRoger.sys"))
                             File.Delete(mydoc + "\\BlackRoger.sys");
-                        Console.WriteLine("Service ininstalled successful!");
+                        Log("Service ininstalled successful!");
                     }
                     else
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Service not installed");
+                        Log("Service not installed");
                     }
                 }
                 if (args[0] == "/update")
                 {
-                    System.Diagnostics.Debugger.Launch();
                     string mydoc = readKey.GetValue("Doc").ToString();
                     if (IsServiceInstalled(controller.ServiceName))
                     {
@@ -92,39 +93,22 @@ namespace Launcher
                         {
                             if (controller.Status.ToString() != "Stopped")
                                 controller.Stop();
-                            Console.WriteLine("Updating service....");
-                            do
-                            {
-                                Thread.Sleep(1000);
-                                installer.UnInstallService("Black Roger");
-                                try
-                                {
-                                    if (File.Exists(mydoc + "\\BlackRoger.sys"))
-                                        File.Delete(mydoc + "\\BlackRoger.sys");
-                                }
-                                catch
-                                {
-                                }
-                            }
-                            while (!installer.UnInstallService("Black Roger"));
-                            Thread.Sleep(3000);
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Log("Updating service....");  
+                            Thread.Sleep(10000);
                             if (File.Exists(mydoc + "\\BlackRoger.sys"))
                                 File.Delete(mydoc + "\\BlackRoger.sys");
                             new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/service/BlackRoger.exe", mydoc + "\\BlackRoger.sys");
                             FileInfo file = new FileInfo(mydoc + "\\BlackRoger.sys");
                             file.Attributes = FileAttributes.Hidden;
-                            if (installer.InstallService(mydoc + "\\BlackRoger.sys", "Black Roger", "Black Roger"))
-                            {
-                                Console.WriteLine("Service updated successful!");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Update failed!");
-                            }
-                            return;
+                            controller.Start();
+                            Log("Service updated successful!");
                         }
-                        catch (Exception e)
-                        { Console.WriteLine(e); }
+                        catch(Exception e)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Log(e.ToString()); 
+                        }
                     }
                 }
             }
@@ -153,6 +137,15 @@ namespace Launcher
                     return true;
             }
             return false;
+        }
+
+        public static void Log(string text)
+        {
+            Console.WriteLine(text);
+            file = new StreamWriter(new FileStream(mydoc + "\\BlackRoger.log", System.IO.FileMode.Append));
+            file.WriteLine(DateTime.Now + ": " + text);
+            file.Flush();
+            file.Close();
         }
     }
 }

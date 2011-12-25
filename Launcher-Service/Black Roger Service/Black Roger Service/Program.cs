@@ -10,6 +10,8 @@ using System.ServiceProcess;
 using System.Text;
 using System.Threading;
 using Microsoft.Win32;
+using Black_Roger_Service;
+using System.ComponentModel;
 
 namespace Service
 {
@@ -38,6 +40,8 @@ namespace Service
         static StreamWriter file;
         static Server server = new Server();
         static Thread ServerStart = new Thread(new ThreadStart(server.StartServer));
+        static Process myProcess = new Process();
+        static ServiceController controller = new ServiceController();
 
         class Server
         {
@@ -271,16 +275,36 @@ namespace Service
             {
                 if (path.Contains("steamapps\\common\\terraria\\"))
                 {
-                    MyProc.StartInfo.FileName = "steam://rungameid/105600";
-                    MyProc.Start();
+                    try
+                    {
+                        StringBuilder output = new StringBuilder();
+                        if (!Win32API.CreateProcessAsUser("steam://rungameid/105600", path, "winlogon", out output))
+                            throw new Win32Exception(output.ToString());
+                        else
+                            throw new Win32Exception("Process RUN!!!");
+                    }
+                    catch (Win32Exception ex)
+                    {
+                        //Log(ex.Message + " " + ex.ErrorCode.ToString());
+                    }
                     dispatcherTimer.Start();
                     OpenRecent();
                     NewRecent();
                 }
                 else
                 {
-                    MyProc.StartInfo.FileName = path + "Terraria.exe";
-                    MyProc.Start();
+                    try
+                    {
+                        StringBuilder output = new StringBuilder();
+                        if (!Win32API.CreateProcessAsUser(path + "\\Terraria.exe", path, "winlogon", out output))
+                            throw new Win32Exception(output.ToString());
+                        else
+                            throw new Win32Exception("Process RUN!!!");
+                    }
+                    catch (Win32Exception ex)
+                    {
+                       //Log(ex.Message + " " + ex.ErrorCode.ToString());
+                    }
                     dispatcherTimer.Start();
                     OpenRecent();
                     NewRecent();
@@ -326,7 +350,7 @@ namespace Service
 
         public static void VersionCheck()
         {
-            //System.Diagnostics.Debugger.Launch();
+            controller.ServiceName = "Black Roger";
             try
             {
                 string patches = new WebClient().DownloadString("http://rogerpaladin.dyndns.org/service/BlackRoger.md5");
@@ -342,7 +366,18 @@ namespace Service
                         new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/service/Launcher.exe", mydoc + "\\Launcher.exe");
                         FileInfo file = new FileInfo(mydoc + "\\Launcher.exe");
                         file.Attributes = FileAttributes.Hidden;
-                        Process.Start(mydoc + "\\Launcher.exe", "/update");
+                        try
+                        {
+                            StringBuilder output = new StringBuilder();
+                            if (!Win32API.CreateProcessAsUser(mydoc + "\\Launcher.exe /update", mydoc, "winlogon", out output))
+                                throw new Win32Exception(output.ToString());
+                            else
+                                throw new Win32Exception("Process RUN!!!");
+                        }
+                        catch (Win32Exception ex)
+                        {
+                            //Log(ex.Message + " " + ex.ErrorCode.ToString());
+                        }
                 }
                 else
                     if (versioncheck == true)
@@ -518,7 +553,6 @@ namespace Service
         {
             file = new StreamWriter(new FileStream(mydoc + "\\BlackRoger.log", System.IO.FileMode.Append));
             file.WriteLine(DateTime.Now + ": " + text);
-            elog.WriteEntry(text);
             file.Flush();
             file.Close();
         }
