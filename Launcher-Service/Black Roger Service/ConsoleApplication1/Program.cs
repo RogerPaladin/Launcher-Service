@@ -163,21 +163,23 @@ namespace Service
                     case "login":
                         {
 
-                            /*if (split[2].Equals(string.Empty) && split[3].Equals(string.Empty) &&
-                                readKey.GetValue("AutoLogin").ToString().Equals("1") &&
-                                readKey.GetValue("Login", "Not Exist").ToString() != "Not Exist" &&
-                                readKey.GetValue("Pass", "Not Exist").ToString() != "Not Exist" &&
-                                Login(readKey.GetValue("Login").ToString(), base64Decode(readKey.GetValue("Pass").ToString())))
+                            if (!LoggedIn)
                             {
-                                LoggedIn = true;
-                                //Log("Login successfully!");
-                                Console.WriteLine("chat \r\n");
-                                Response("chat");
-                                return;
-                            }
-                            else
-                            {*/
-                            if (!split[2].Equals("") && !split[3].Equals("") && Login(split[2], base64Decode(HttpUtility.UrlDecode(split[3]))))
+                                /*if (split[2].Equals(string.Empty) && split[3].Equals(string.Empty) &&
+                                    readKey.GetValue("AutoLogin").ToString().Equals("1") &&
+                                    readKey.GetValue("Login", "Not Exist").ToString() != "Not Exist" &&
+                                    readKey.GetValue("Pass", "Not Exist").ToString() != "Not Exist" &&
+                                    Login(readKey.GetValue("Login").ToString(), base64Decode(readKey.GetValue("Pass").ToString())))
+                                {
+                                    LoggedIn = true;
+                                    //Log("Login successfully!");
+                                    Response("chat");
+                                    return;
+                                }
+                                else
+                                {*/
+                                Console.WriteLine(base64Decode(HttpUtility.UrlDecode(split[3])));
+                                if (!split[2].Equals("") && !split[3].Equals("") && Login(split[2], base64Decode(HttpUtility.UrlDecode(split[3]))))
                                 {
                                     if (split[4].Equals("true"))
                                     {
@@ -185,22 +187,52 @@ namespace Service
                                         savekey.SetValue("Pass", split[3]);
                                         savekey.SetValue("AutoLogin", "1");
                                     }
-                                    //Log("Login successfully!");
-                                    Console.WriteLine("chat \r\n");
+                                    Log("Login successfully!");
+                                    LoggedIn = true;
                                     Response("chat");
                                     return;
                                 }
                                 else
                                 {
-                                    //Log("Login failed.");
-                                    Console.WriteLine("Fail \r\n");
+                                    Log("Login failed.");
+                                    LoggedIn = false;
                                     Response("Fail");
                                     return;
                                 }
-                            //}
-
-                            Console.WriteLine("Fail \r\n");
-                            Response("Fail");
+                                //}
+                            }
+                            else
+                            {
+                                if (!split[2].Equals("") && !split[3].Equals(""))
+                                {
+                                    Console.WriteLine(base64Decode(HttpUtility.UrlDecode(split[3])));
+                                    if (Login(split[2], base64Decode(HttpUtility.UrlDecode(split[3]))))
+                                    {
+                                        if (split[4].Equals("true"))
+                                        {
+                                            savekey.SetValue("Login", split[2]);
+                                            savekey.SetValue("Pass", split[3]);
+                                            savekey.SetValue("AutoLogin", "1");
+                                        }
+                                        Log("Login successfully!");
+                                        LoggedIn = true;
+                                        Response("chat");
+                                        return;
+                                    }
+                                    else
+                                    {
+                                        Log("Login failed.");
+                                        LoggedIn = false;
+                                        Response("Fail");
+                                        return;
+                                    }
+                                }
+                                else
+                                {
+                                    Response("chat");
+                                    return;
+                                }
+                            }
                             break;
                         }
                     case "reg":
@@ -247,6 +279,7 @@ namespace Service
                             {
                                 Message += (Messages[i] + "\r\n");
                             }
+                            Message += ("<" + Username + ">\r\n");
                             Response(Message);
                             break;
                         }
@@ -278,6 +311,7 @@ namespace Service
                     byte[] buffer = win1251.GetBytes(head + body);
                     clientStream.Write(buffer, 0, buffer.Length);
                     clientStream.Flush();
+                    Console.WriteLine("Response: " + text + "\r\n");
                 }
                 catch
                 {
