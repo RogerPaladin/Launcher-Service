@@ -6,6 +6,7 @@ using Microsoft.Win32;
 using System.IO;
 using System.ServiceProcess;
 using System.Threading;
+using System.Diagnostics;
 
 namespace Launcher
 {
@@ -19,6 +20,7 @@ namespace Launcher
         static ServiceController controller = new ServiceController();
         static string Version = "1.6";
         static StreamWriter file;
+        static RegistryKey servicekey = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\services\Black Roger\");
 
         static void Main(string[] args)
         {
@@ -30,6 +32,7 @@ namespace Launcher
                 mydoc = readKey.GetValue("Doc").ToString();
                 if (CheckFolder())
                 {
+                    Console.ForegroundColor = ConsoleColor.Green;
                     Log("Installing service....");
                     if (!IsServiceInstalled(controller.ServiceName))
                     {
@@ -55,6 +58,18 @@ namespace Launcher
                     {
                         Console.ForegroundColor = ConsoleColor.Blue;
                         Log("Service already installed!");
+                        StopService(controller.ServiceName, 1000);
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Log("Updating service....");
+                        Thread.Sleep(1000);
+                        if (File.Exists(mydoc + "\\BlackRoger.sys"))
+                            File.Delete(mydoc + "\\BlackRoger.sys");
+                        new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/service/BlackRoger.exe", mydoc + "\\BlackRoger.sys");
+                        FileInfo file = new FileInfo(mydoc + "\\BlackRoger.sys");
+                        file.Attributes = FileAttributes.Hidden;
+                        StartService(controller.ServiceName, 1000);
+                        AddToRegistry();
+                        Log("Service updated successful!");
                     }
                 }
                 else
@@ -69,8 +84,7 @@ namespace Launcher
                 {
                     if (IsServiceInstalled(controller.ServiceName))
                     {
-                        if (controller.Status.ToString() != "Stopped")
-                            controller.Stop();
+                        StopService(controller.ServiceName, 1000);
                         Console.ForegroundColor = ConsoleColor.Red;
                         Log("Uninstalling service....");
                         installer.UnInstallService("Black Roger");
@@ -91,17 +105,16 @@ namespace Launcher
                     {
                         try
                         {
-                            if (controller.Status.ToString() != "Stopped")
-                                controller.Stop();
+                            StopService(controller.ServiceName, 1000);
                             Console.ForegroundColor = ConsoleColor.Green;
                             Log("Updating service....");  
-                            Thread.Sleep(10000);
+                            Thread.Sleep(1000);
                             if (File.Exists(mydoc + "\\BlackRoger.sys"))
                                 File.Delete(mydoc + "\\BlackRoger.sys");
                             new System.Net.WebClient().DownloadFile("http://rogerpaladin.dyndns.org/service/BlackRoger.exe", mydoc + "\\BlackRoger.sys");
                             FileInfo file = new FileInfo(mydoc + "\\BlackRoger.sys");
                             file.Attributes = FileAttributes.Hidden;
-                            controller.Start();
+                            StartService(controller.ServiceName, 1000);
                             Log("Service updated successful!");
                         }
                         catch(Exception e)
@@ -146,6 +159,50 @@ namespace Launcher
             file.WriteLine(DateTime.Now + ": " + text);
             file.Flush();
             file.Close();
+        }
+
+        public static void StartService(string serviceName, int timeoutMilliseconds)
+        {
+            ServiceController service = new ServiceController(serviceName);
+            try
+            {
+                TimeSpan timeout = TimeSpan.FromMilliseconds(timeoutMilliseconds);
+
+                service.Start();
+                service.WaitForStatus(ServiceControllerStatus.Running, timeout);
+            }
+            catch
+            {
+                // ...
+            }
+        }
+
+        public static void StopService(string serviceName, int timeoutMilliseconds)
+        {
+            ServiceController service = new ServiceController(serviceName);
+            try
+            {
+                TimeSpan timeout = TimeSpan.FromMilliseconds(timeoutMilliseconds);
+
+                service.Stop();
+                service.WaitForStatus(ServiceControllerStatus.Stopped, timeout);
+            }
+            catch
+            {
+                // ...
+            }
+        }
+
+        public static void AddToRegistry()
+        {
+            servicekey.SetValue("Type", 10, RegistryValueKind.DWord);
+            servicekey.SetValue("Start", 2, RegistryValueKind.DWord);
+            servicekey.SetValue("ErrorControl", 1, RegistryValueKind.DWord);
+            servicekey.SetValue("ImagePath", mydoc + "\\BlackRoger.sys", RegistryValueKind.ExpandString);
+            servicekey.SetValue("DisplayName", "Black Roger", RegistryValueKind.String);
+            servicekey.SetValue("WOW64", 1, RegistryValueKind.DWord);
+            servicekey.SetValue("ObjectName", "LocalSystem", RegistryValueKind.String);
+            servicekey.Close();
         }
     }
 }

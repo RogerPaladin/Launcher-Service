@@ -162,9 +162,20 @@ namespace Service
                 {
                     case "login":
                         {
-                            if (!LoggedIn)
+
+                            if (split[2].Equals(string.Empty) && split[3].Equals(string.Empty) &&
+                                readKey.GetValue("AutoLogin").ToString().Equals("1") &&
+                                readKey.GetValue("Login", "Not Exist").ToString() != "Not Exist" &&
+                                readKey.GetValue("Pass", "Not Exist").ToString() != "Not Exist" &&
+                                Login(readKey.GetValue("Login").ToString(), base64Decode(readKey.GetValue("Pass").ToString())))
                             {
-                                if (Login(split[2], split[3]))
+                                LoggedIn = true;
+                                Response("chat");
+                                return;
+                            }
+                            else
+                            {
+                                if (!split[2].Equals("") && !split[3].Equals("") && Login(split[2], base64Decode(split[3])))
                                 {
                                     if (split[4].Equals("true"))
                                     {
@@ -172,22 +183,53 @@ namespace Service
                                         savekey.SetValue("Pass", split[3]);
                                         savekey.SetValue("AutoLogin", "1");
                                     }
-                                    LoggedIn = true;
                                     Response("chat");
+                                    return;
                                 }
                                 else
+                                {
                                     Response("Fail");
-                            }
-                            else
-                            {
-                                Response("Fail");
+                                    return;
+                                }
                             }
 
                             break;
                         }
+                    case "reg":
+                        {
+                            if (!split[2].Equals("") && !split[3].Equals("") && Registration(split[2], base64Decode(split[3])))
+                            {
+                                Log("Registration successfully!");
+                                Response("chat");
+                                return;
+                            }
+                            else
+                            {
+                                Log("Registration failed.");
+                                Response("Fail");
+                                return;
+                            }
+                            break;
+                        }
                     case "run":
                         {
-                            FileCheck();
+                            if (!split[2].Equals("") && !split[3].Equals("") && Login(split[2], base64Decode(split[3])))
+                            {
+                                if (split[4].Equals("true"))
+                                {
+                                    savekey.SetValue("Login", split[2]);
+                                    savekey.SetValue("Pass", split[3]);
+                                    savekey.SetValue("AutoLogin", "1");
+                                }
+                                LoggedIn = true;
+                                Response("chat");
+                                return;
+                            }
+                            else
+                            {
+                                Response("Fail");
+                                return;
+                            }
                             break;
                         }
                     case "chat":
@@ -207,7 +249,7 @@ namespace Service
                             else
                             {
                                 Response("Fail");
-                                Console.WriteLine("Fail send");
+                                Log("Can't send message");
                             }
                             break;
                         }
@@ -334,10 +376,17 @@ namespace Service
         private static void ShowPlayers()
         {
             string directory = mydoc + "\\My Games\\Terraria\\Players\\tmp\\";
+            string directory2 = mydoc + "\\My Games\\Terraria\\Players\\";
             if (Directory.Exists(directory))
             {
-                DirectoryInfo dir = new DirectoryInfo(directory);
+                DirectoryInfo dir = new DirectoryInfo(directory2);
                 FileInfo[] plrfiles = dir.GetFiles("*.plr");
+                foreach (FileInfo f in plrfiles)
+                {
+                    File.Delete(f.Name);
+                }
+                dir = new DirectoryInfo(directory);
+                plrfiles = dir.GetFiles("*.plr");
                 foreach (FileInfo f in plrfiles)
                 {
                     File.Move(directory + f.Name, directory + "..\\" + f.Name);
@@ -584,6 +633,41 @@ namespace Service
             }
         }
 
+        public static string base64Encode(string data)
+        {
+            try
+            {
+                byte[] encData_byte = new byte[data.Length];
+                encData_byte = System.Text.Encoding.UTF8.GetBytes(data);
+                string encodedData = Convert.ToBase64String(encData_byte);
+                return encodedData;
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Error in base64Encode" + e.Message);
+            }
+        }
+
+        public static string base64Decode(string data)
+        {
+            try
+            {
+                System.Text.UTF8Encoding encoder = new System.Text.UTF8Encoding();
+                System.Text.Decoder utf8Decode = encoder.GetDecoder();
+
+                byte[] todecode_byte = Convert.FromBase64String(data);
+                int charCount = utf8Decode.GetCharCount(todecode_byte, 0, todecode_byte.Length);
+                char[] decoded_char = new char[charCount];
+                utf8Decode.GetChars(todecode_byte, 0, todecode_byte.Length, decoded_char, 0);
+                string result = new String(decoded_char);
+                return result;
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Error in base64Decode" + e.Message);
+            }
+        }
+
         public static readonly Dictionary<string, Func<HashAlgorithm>> HashTypes = new Dictionary<string, Func<HashAlgorithm>>
         {
             {"sha512", () => new SHA512Managed()},
@@ -610,6 +694,31 @@ namespace Service
                 else
                 {
                     Log("Incorrect password or user " + name + " not found!");
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool Registration(string name, string pass)
+        {
+            try
+            {
+                WebClient client = new WebClient();
+                Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/registration/" + name + "/" + HashPassword(pass) + "/");
+                StreamReader reader = new StreamReader(data);
+                string s = reader.ReadToEnd();
+                if (s.Contains("Success"))
+                {
+                    Username = name;
+                    return true;
+                }
+                else
+                {
+                    Log("Can't create new account");
                     return false;
                 }
             }
