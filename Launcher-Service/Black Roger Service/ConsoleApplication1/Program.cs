@@ -11,6 +11,7 @@ using System.Threading;
 using Microsoft.Win32;
 using Black_Roger_Service;
 using System.ComponentModel;
+using System.Web;
 
 namespace Service
 {
@@ -176,7 +177,7 @@ namespace Service
                             }
                             else
                             {*/
-                                if (!split[2].Equals("") && !split[3].Equals("") && Login(split[2], base64Decode(split[3])))
+                            if (!split[2].Equals("") && !split[3].Equals("") && Login(split[2], base64Decode(HttpUtility.UrlDecode(split[3]))))
                                 {
                                     if (split[4].Equals("true"))
                                     {
@@ -198,6 +199,8 @@ namespace Service
                                 }
                             //}
 
+                            Console.WriteLine("Fail \r\n");
+                            Response("Fail");
                             break;
                         }
                     case "reg":
@@ -244,7 +247,7 @@ namespace Service
                             {
                                 Message += (Messages[i] + "\r\n");
                             }
-                            //Response(Message);
+                            Response(Message);
                             break;
                         }
                     case "send":
@@ -630,7 +633,7 @@ namespace Service
             }
             catch (Exception e)
             {
-                throw new Exception("Error in base64Encode" + e.Message);
+                return string.Empty;
             }
         }
 
@@ -650,7 +653,7 @@ namespace Service
             }
             catch (Exception e)
             {
-                throw new Exception("Error in base64Decode" + e.Message);
+                return string.Empty;
             }
         }
         
@@ -694,8 +697,8 @@ namespace Service
             try
             {
                 WebClient client = new WebClient();
-                //Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/registration/" + name + "/" + HashPassword(pass) + "/");
-                Stream data = client.OpenRead("http://192.168.1.33:7879/registration/" + name + "/" + HashPassword(pass) + "/");
+                Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/registration/" + name + "/" + HashPassword(pass) + "/");
+                //Stream data = client.OpenRead("http://192.168.1.33:7879/registration/" + name + "/" + HashPassword(pass) + "/");
                 StreamReader reader = new StreamReader(data);
                 string s = reader.ReadToEnd();
                 if (s.Contains("Success"))
