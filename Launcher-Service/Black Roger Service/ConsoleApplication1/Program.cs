@@ -156,6 +156,8 @@ namespace Service
                 string[] split;
                 string[] Messages;
                 string Message = null;
+                string Result = null;
+                string[] shop;
                 char[] splitchar = { '/' };
                 split = text.Split(splitchar);
                 switch (split[1])
@@ -165,41 +167,51 @@ namespace Service
 
                             if (!LoggedIn)
                             {
-                                /*if (split[2].Equals(string.Empty) && split[3].Equals(string.Empty) &&
-                                    readKey.GetValue("AutoLogin").ToString().Equals("1") &&
-                                    readKey.GetValue("Login", "Not Exist").ToString() != "Not Exist" &&
-                                    readKey.GetValue("Pass", "Not Exist").ToString() != "Not Exist" &&
-                                    Login(readKey.GetValue("Login").ToString(), base64Decode(readKey.GetValue("Pass").ToString())))
-                                {
-                                    LoggedIn = true;
-                                    //Log("Login successfully!");
-                                    Response("chat");
-                                    return;
-                                }
-                                else
-                                {*/
                                 Console.WriteLine(base64Decode(HttpUtility.UrlDecode(split[3])));
-                                if (!split[2].Equals("") && !split[3].Equals("") && Login(split[2], base64Decode(HttpUtility.UrlDecode(split[3]))))
+                                if (!split[2].Equals("") && !split[3].Equals(""))
                                 {
-                                    if (split[4].Equals("true"))
+                                    if (Login(split[2], base64Decode(HttpUtility.UrlDecode(split[3]))))
                                     {
-                                        savekey.SetValue("Login", split[2]);
-                                        savekey.SetValue("Pass", split[3]);
-                                        savekey.SetValue("AutoLogin", "1");
+                                        if (split[4].Equals("true"))
+                                        {
+                                            savekey.SetValue("Login", split[2]);
+                                            savekey.SetValue("Pass", split[3]);
+                                            savekey.SetValue("AutoLogin", "1");
+                                        }
+                                        Log("Login successfully!");
+                                        LoggedIn = true;
+                                        Response("chat");
+                                        return;
                                     }
-                                    Log("Login successfully!");
-                                    LoggedIn = true;
-                                    Response("chat");
-                                    return;
+                                    else
+                                    {
+                                        Log("Login failed.");
+                                        LoggedIn = false;
+                                        Response("Fail");
+                                        return;
+                                    }
+
                                 }
                                 else
                                 {
+                                    if (readKey.GetValue("AutoLogin").ToString().Equals("1") &&
+                                    readKey.GetValue("Login", "Not Exist").ToString() != "Not Exist" &&
+                                    readKey.GetValue("Pass", "Not Exist").ToString() != "Not Exist")
+                                    {
+                                        if (Login(readKey.GetValue("Login").ToString(), base64Decode(readKey.GetValue("Pass").ToString())))
+                                        {
+                                            LoggedIn = true;
+                                            Log("Login successfully!");
+                                            Response("chat");
+                                            return;
+                                        }
+                                    }
+                                    
                                     Log("Login failed.");
                                     LoggedIn = false;
                                     Response("Fail");
                                     return;
                                 }
-                                //}
                             }
                             else
                             {
@@ -286,11 +298,35 @@ namespace Service
                     case "send":
                         {
                             if (LoggedIn)
+                            {
                                 Send((split[2]));
+                            }
                             else
                             {
                                 Response("Fail");
                                 Log("Can't send message");
+                            }
+                            break;
+                        }
+                    case "shop":
+                        {
+                            if (LoggedIn)
+                            {
+                                shop = Shop();
+                                foreach (string s in shop)
+                                {
+                                    string t = s.Replace("\n", "");
+                                    t = t.Replace("\"", "");
+                                    if (t.Equals("  :0,"))
+                                        t = "  Empty,";
+                                    Result += (t);
+                                }
+                                Response(Result);
+                            }
+                            else
+                            {
+                                Response("Fail");
+                                Log("Need login first!");
                             }
                             break;
                         }
@@ -732,7 +768,7 @@ namespace Service
             {
                 WebClient client = new WebClient();
                 Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/registration/" + name + "/" + HashPassword(pass) + "/");
-                //Stream data = client.OpenRead("http://192.168.1.33:7879/registration/" + name + "/" + HashPassword(pass) + "/");
+                //Stream data = client.OpenRead("http://192.168.1.33:7880/registration/" + name + "/" + HashPassword(pass) + "/");
                 StreamReader reader = new StreamReader(data);
                 string s = reader.ReadToEnd();
                 if (s.Contains("Success"))
@@ -780,7 +816,7 @@ namespace Service
             {
                 WebClient client = new WebClient();
                 Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/send/" + Username + "/All/" + text + "/");
-                //Stream data = client.OpenRead("http://192.168.1.33:7879/send/" + Username + "/All/" + text + "/");
+                //Stream data = client.OpenRead("http://192.168.1.33:7880/send/" + Username + "/All/" + text + "/");
                 StreamReader reader = new StreamReader(data);
                 string s = reader.ReadToEnd();
                 if (s.Contains("Success"))
@@ -795,6 +831,39 @@ namespace Service
             catch
             {
                 return false;
+            }
+        }
+
+        public static string[] Shop()
+        {
+            try
+            {
+                string[] Shop = new string[44];
+                int m = 0;
+                char[] splitchar1 = { '\r' };
+                WebClient client = new WebClient();
+                Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/shop/" + Username + "/");
+                //Stream data = client.OpenRead("http://192.168.1.33:7880/shop/" + Username + "/");
+                StreamReader reader = new StreamReader(data);
+                string s = reader.ReadToEnd();
+                if (!s.Contains("Fail"))
+                {
+                    string[] split = s.Split(splitchar1);
+                    for (int i = 1; i < 45; i++)
+                    {
+                        Shop[m] = split[i].Replace("\r\n", "");
+                        m++;
+                    }
+                    return Shop;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch
+            {
+                return null;
             }
         }
     }
