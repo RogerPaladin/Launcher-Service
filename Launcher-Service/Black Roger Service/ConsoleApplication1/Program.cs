@@ -267,7 +267,7 @@ namespace Service
                         {
                             if (!Username.Equals(""))
                             {
-                                RunGame();
+                                FileCheck();
                                 return;
                             }
                             else
@@ -367,17 +367,14 @@ namespace Service
                 ip = theaddress.ToString();
             }
 
-            if (File.Exists(path + "\\Terraria.exe"))
+            if (File.Exists(path + "Terraria.exe"))
             {
                 if (path.Contains("steamapps\\common\\terraria\\"))
                 {
                     try
                     {
-                        StringBuilder output = new StringBuilder();
-                        if (!Win32API.CreateProcessAsUser("steam://rungameid/105600", path, "winlogon", out output))
-                            throw new Win32Exception(output.ToString());
-                        else
-                            throw new Win32Exception("Process RUN!!!");
+                        MyProc.StartInfo.FileName = "steam://rungameid/105600";
+                        MyProc.Start();
                     }
                     catch (Win32Exception ex)
                     {
@@ -391,11 +388,8 @@ namespace Service
                 {
                     try
                     {
-                        StringBuilder output = new StringBuilder();
-                        if (!Win32API.CreateProcessAsUser(path + "\\Terraria.exe", path, "winlogon", out output))
-                            throw new Win32Exception(output.ToString());
-                        else
-                            throw new Win32Exception("Process RUN!!!");
+                        MyProc.StartInfo.FileName = path + "Terraria.exe";
+                        MyProc.Start();
                     }
                     catch (Win32Exception ex)
                     {

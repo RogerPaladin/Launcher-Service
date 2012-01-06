@@ -216,16 +216,9 @@ namespace Service
                         }
                     case "run":
                         {
-                            if (!split[2].Equals("") && !split[3].Equals("") && Login(split[2], base64Decode(split[3])))
+                            if (!Username.Equals(""))
                             {
-                                if (split[4].Equals("true"))
-                                {
-                                    savekey.SetValue("Login", split[2]);
-                                    savekey.SetValue("Pass", split[3]);
-                                    savekey.SetValue("AutoLogin", "1");
-                                }
-                                LoggedIn = true;
-                                Response("chat");
+                                FileCheck();
                                 return;
                             }
                             else
