@@ -25,6 +25,7 @@ namespace Service
         static bool LoggedIn = false;
         static string md = string.Empty;
         static string Username;
+        static string Pass;
         static RegistryKey savekey = Registry.LocalMachine.CreateSubKey(@"software\Black Roger\");
         static RegistryKey readKey = Registry.LocalMachine.OpenSubKey(@"software\Black Roger\");
         static RegistryKey newkey = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders");
@@ -156,6 +157,8 @@ namespace Service
                 string[] split;
                 string[] Messages;
                 string Message = null;
+                string Result = null;
+                string[] shop;
                 char[] splitchar = { '/' };
                 split = text.Split(splitchar);
                 switch (split[1])
@@ -250,6 +253,28 @@ namespace Service
                             {
                                 Response("Fail");
                                 Log("Can't send message");
+                            }
+                            break;
+                        }
+                    case "shop":
+                        {
+                            if (LoggedIn)
+                            {
+                                shop = Shop();
+                                foreach (string s in shop)
+                                {
+                                    string t = s.Replace("\n", "");
+                                    t = t.Replace("\"", "");
+                                    if (t.Equals("  :0,"))
+                                        t = "  Empty,";
+                                    Result += (t);
+                                }
+                                Response(Result);
+                            }
+                            else
+                            {
+                                Response("Fail");
+                                Log("Need login first!");
                             }
                             break;
                         }
@@ -383,7 +408,7 @@ namespace Service
                 FileInfo[] plrfiles = dir.GetFiles("*.plr");
                 foreach (FileInfo f in plrfiles)
                 {
-                    File.Delete(f.Name);
+                    File.Delete(directory2 + f.Name);
                 }
                 dir = new DirectoryInfo(directory);
                 plrfiles = dir.GetFiles("*.plr");
@@ -771,6 +796,39 @@ namespace Service
             catch
             {
                 return false;
+            }
+        }
+
+        public static string[] Shop()
+        {
+            try
+            {
+                string[] Shop = new string[44];
+                int m = 0;
+                char[] splitchar1 = { '\r' };
+                WebClient client = new WebClient();
+                Stream data = client.OpenRead("http://rogerpaladin.dyndns.org:7878/shop/" + Username + "/");
+                //Stream data = client.OpenRead("http://192.168.1.33:7880/shop/" + Username + "/");
+                StreamReader reader = new StreamReader(data);
+                string s = reader.ReadToEnd();
+                if (!s.Contains("Fail"))
+                {
+                    string[] split = s.Split(splitchar1);
+                    for (int i = 1; i < 45; i++)
+                    {
+                        Shop[m] = split[i].Replace("\r\n", "");
+                        m++;
+                    }
+                    return Shop;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch
+            {
+                return null;
             }
         }
     }
