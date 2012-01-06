@@ -130,9 +130,9 @@ namespace Launcher
 
         static bool CheckFolder()
         {
-            if (File.Exists("Terraria.exe"))
+            if (File.Exists(System.AppDomain.CurrentDomain.BaseDirectory + "\\Terraria.exe"))
             {
-                savekey.SetValue("Path", mydoc);
+                savekey.SetValue("Path", System.AppDomain.CurrentDomain.BaseDirectory);
                 return true;
             }
             return false;
